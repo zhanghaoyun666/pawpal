@@ -1,0 +1,26 @@
+﻿Checking chats for user asd (08e77f74-292f-4427-af83-a331d55ec20d)...
+Found 4 chats
+Chat ID: bfc9c872-714d-46df-a245-81514efaa83e
+  Pet: Max (ID: 1fce9f58-438d-4fa4-a03f-2e284d85e69f)
+  Opponent (Coordinator) Name: Sarah Wilson
+  Opponent (Coordinator) Image: https://lh3.googleusercontent.com/aida-public/AB6AXuDPVpLiTvjm3XOaQwsBrF6Qrltmi8yr7_fSnxcOTBNe2iwxvEZ5IuLrtEkD4T9Yp1mDiX9wrRVzH2a6zzTeUKoAaP90CdNTbpDLpEQkqFQEBBF6iUbvMGFj93CvOllMZo9jdmXquulhZY1umcQKVWu4jIoBn3UPTzlGRCZ_XdXxzRAFA5XtDAy0MhFV4I_rIX2m8SoMWjPToqk63I5x780gfOc3R7hWC3Nf0iOC70HGXlInN7XjLA0fgq5W7LX8ERxXPJ2YAkeIIjw
+  Unread: 4
+--------------------
+Chat ID: 371bae55-c27c-4930-ba69-4633a9c7eed9
+  Pet: Luna (ID: 304edfb9-2346-40e0-8a62-1297e970c95a)
+  Opponent (Coordinator) Name: Sarah Wilson
+  Opponent (Coordinator) Image: https://lh3.googleusercontent.com/aida-public/AB6AXuDPVpLiTvjm3XOaQwsBrF6Qrltmi8yr7_fSnxcOTBNe2iwxvEZ5IuLrtEkD4T9Yp1mDiX9wrRVzH2a6zzTeUKoAaP90CdNTbpDLpEQkqFQEBBF6iUbvMGFj93CvOllMZo9jdmXquulhZY1umcQKVWu4jIoBn3UPTzlGRCZ_XdXxzRAFA5XtDAy0MhFV4I_rIX2m8SoMWjPToqk63I5x780gfOc3R7hWC3Nf0iOC70HGXlInN7XjLA0fgq5W7LX8ERxXPJ2YAkeIIjw
+  Unread: 6
+--------------------
+Chat ID: 4d8f44ed-f16c-4148-96f4-0385d42670ab
+  Pet: Charlie (ID: 3e0dc125-7d1f-43b7-b45a-8541337585e0)
+  Opponent (Coordinator) Name: Sarah Wilson
+  Opponent (Coordinator) Image: https://lh3.googleusercontent.com/aida-public/AB6AXuDPVpLiTvjm3XOaQwsBrF6Qrltmi8yr7_fSnxcOTBNe2iwxvEZ5IuLrtEkD4T9Yp1mDiX9wrRVzH2a6zzTeUKoAaP90CdNTbpDLpEQkqFQEBBF6iUbvMGFj93CvOllMZo9jdmXquulhZY1umcQKVWu4jIoBn3UPTzlGRCZ_XdXxzRAFA5XtDAy0MhFV4I_rIX2m8SoMWjPToqk63I5x780gfOc3R7hWC3Nf0iOC70HGXlInN7XjLA0fgq5W7LX8ERxXPJ2YAkeIIjw
+  Unread: 2
+--------------------
+Chat ID: 416cb5a8-5927-4ee9-841a-c6a02a7dd0d5
+  Pet: langchain (ID: 7f5d8430-9502-48a3-b99b-9934911753dc)
+  Opponent (Coordinator) Name: sad
+  Opponent (Coordinator) Image: None
+  Unread: 1
+--------------------
