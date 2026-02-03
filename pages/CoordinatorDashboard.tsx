@@ -5,25 +5,21 @@ import { api } from '../services/api';
 
 const CoordinatorDashboard: React.FC = () => {
     const navigate = useNavigate();
-    const { user } = useApp();
-    const [receivedApps, setReceivedApps] = useState<any[]>([]);
+    const { user, receivedApplications, refreshReceivedApplications } = useApp();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (user) {
-            api.getReceivedApplications(user.id)
-                .then(setReceivedApps)
-                .catch(console.error)
-                .finally(() => setLoading(false));
+            // 使用AppContext中的receivedApplications状态
+            setLoading(false);
         }
-    }, [user]);
+    }, [user, receivedApplications]);
 
     const handleUpdateStatus = async (appId: string, newStatus: string) => {
         try {
             await api.updateApplicationStatus(appId, newStatus);
-            // Refresh list
-            const updated = await api.getReceivedApplications(user!.id);
-            setReceivedApps(updated);
+            // 使用AppContext中的refreshReceivedApplications函数
+            await refreshReceivedApplications();
             alert(newStatus === 'approved' ? '已批准领养申请' : '已拒绝领养申请');
         } catch (e) {
             console.error(e);
@@ -43,14 +39,14 @@ const CoordinatorDashboard: React.FC = () => {
             <main className="flex-1 p-4 overflow-y-auto">
                 {loading ? (
                     <div className="flex justify-center p-10 text-gray-400">加载中...</div>
-                ) : receivedApps.length === 0 ? (
+                ) : receivedApplications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center p-10 text-gray-400">
                         <span className="material-symbols-outlined text-5xl mb-2">assignment_ind</span>
                         <p>暂无收到的申请</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {receivedApps.map((app) => (
+                        {receivedApplications.map((app) => (
                             <div key={app.id} className="bg-card-light dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">

@@ -161,7 +161,8 @@ def get_pets(owner_id: str = None, include_adopted: bool = False):
         is_adopted = _check_if_adopted(item.get('id', ''))
         
         # Filter out adopted pets unless include_adopted is True
-        if is_adopted and not include_adopted and not owner_id:
+        # 注意：当提供了owner_id时，我们也要检查include_adopted参数
+        if is_adopted and not include_adopted:
             continue
             
         formatted_item = _format_pet(item, is_adopted=is_adopted)

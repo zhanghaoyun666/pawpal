@@ -11,10 +11,11 @@ const getAuthHeaders = () => {
 
 export const api = {
     getPets: async (ownerId?: string, includeAdopted?: boolean): Promise<Pet[]> => {
-        let url = ownerId ? `${API_BASE_URL}/pets?owner_id=${ownerId}` : `${API_BASE_URL}/pets`;
-        if (includeAdopted) {
-            url += `&include_adopted=true`;
-        }
+        const params = new URLSearchParams();
+        if (ownerId) params.append('owner_id', ownerId);
+        if (includeAdopted) params.append('include_adopted', 'true');
+        
+        const url = `${API_BASE_URL}/pets${params.toString() ? '?' + params.toString() : ''}`;
         const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch pets');
         return res.json();

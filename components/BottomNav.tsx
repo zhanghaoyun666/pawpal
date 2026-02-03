@@ -8,7 +8,7 @@ const BottomNav: React.FC = () => {
   const { chats, user, receivedApplications } = useApp();
 
   const totalUnreadCount = chats.reduce((acc, chat) => acc + (chat.unreadCount || 0), 0);
-  const hasNewApplications = user?.role === 'coordinator' && receivedApplications.some(app => app.status !== 'approved' && app.status !== 'rejected');
+  const hasNewApplications = user?.role === 'coordinator' && receivedApplications.some(app => app.status === 'pending');
   const isActive = (path: string) => location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
 
   return (

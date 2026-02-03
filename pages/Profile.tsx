@@ -80,7 +80,7 @@ const Profile: React.FC = () => {
         {user && [
           ...(user.role !== 'coordinator' ? [{ icon: 'history', text: `领养记录 (${applications.length})`, path: '/adoption-history' }] : []),
           ...(user.role === 'coordinator' ? [
-            { icon: 'assignment_ind', text: '收到的申请', path: '/coordinator/dashboard', hasNotification: receivedApplications.some(app => app.status !== 'approved' && app.status !== 'rejected') },
+            { icon: 'assignment_ind', text: '收到的申请', path: '/coordinator/dashboard', hasNotification: receivedApplications.some(app => app.status === 'pending') },
             { icon: 'pets', text: '我的发布', path: '/my-publications' }
           ] : []),
           { icon: 'help', text: '帮助中心', path: '/help' },

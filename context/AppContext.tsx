@@ -139,6 +139,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshData();
   }, [user]);
 
+  // 单独监听receivedApplications的变化，确保小红点正确更新
+  useEffect(() => {
+    if (user && user.role === 'coordinator') {
+      refreshReceivedApplications();
+    }
+  }, [user, refreshReceivedApplications]);
+
   const login = (token: string, userData: User) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
