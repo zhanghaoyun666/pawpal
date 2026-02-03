@@ -138,16 +138,23 @@ const Chat: React.FC = () => {
       isRead: false
     };
 
+    // 乐观更新：立即显示消息
     setMessages(prev => [...prev, optimisticMessage]);
     setInputText('');
 
     try {
       await api.sendMessage(effectiveChatId, inputText, user.id);
-      // Refresh to get server timestamp/ID
-      const updatedMessages = await api.getMessages(effectiveChatId, user.id);
-      setMessages(updatedMessages);
+    
+      // 发送成功后，延迟一小段时间再手动刷新一次
+      setTimeout(() => {
+        api.getMessages(effectiveChatId, user.id).then(updatedMessages => {
+          setMessages(updatedMessages);
+        }).catch(console.error);
+      }, 1000); // 1秒后刷新
     } catch (error) {
       console.error("Failed to send", error);
+      // 发送失败时移除乐观更新的消息
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
     }
   };
   
