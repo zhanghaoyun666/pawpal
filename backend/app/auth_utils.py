@@ -12,20 +12,23 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_here")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# 修改：明确指定bcrypt版本，避免版本检测问题
+# 使用更安全的配置，避免bcrypt版本检测问题
 pwd_context = CryptContext(
     schemes=["bcrypt"], 
     deprecated="auto",
-    bcrypt__version=None  # 禁用自动版本检测
+    bcrypt__ident="2b",  # 指定bcrypt版本标识
+    bcrypt__rounds=12      # 指定加密轮数
 )
 security = HTTPBearer()
 
 def verify_password(plain_password, hashed_password):
+    # 截断密码到72字节（bcrypt限制）
+    plain_password = plain_password[:72]
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
-    # 修改：添加密码长度限制，截断超过72字节的密码
-    password = password[:72]  # bcrypt限制密码不能超过72字节
+    # 截断密码到72字节（bcrypt限制）
+    password = password[:72]
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

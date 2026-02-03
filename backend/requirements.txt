@@ -6,4 +6,4 @@ pydantic
 passlib[bcrypt]==1.7.4  # 固定passlib版本
 python-jose[cryptography]
 python-multipart
-bcrypt==4.0.1  # 固定bcrypt版本
+bcrypt==3.2.2  # 使用更兼容的bcrypt版本
