@@ -174,12 +174,12 @@ const Chat: React.FC = () => {
         setLoading(false);
       });
 
-      // 消息轮询，每5秒刷新一次
+      // 将轮询间隔调整为8-10秒，避免过于频繁
       const interval = setInterval(() => {
-        api.getMessages(id, user.id).then(setMessages).catch(console.error);
-      }, 5000);
-    
-      return () => clearInterval(interval);
+        api.getMessages(effectiveChatId, user.id).then(updatedMessages => {
+          setMessages(updatedMessages);
+        }).catch(console.error);
+      }, 8000); // 8秒轮询一次
     }
   }, [id, user, refreshChats, markChatAsReadLocally]);
 
