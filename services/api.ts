@@ -1,6 +1,7 @@
 import { Pet, ChatSession, Message } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+// 使用环境变量配置API地址，支持开发和生产环境
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 // 获取认证令牌
 const getAuthHeaders = () => {
