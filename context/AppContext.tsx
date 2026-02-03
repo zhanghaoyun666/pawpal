@@ -29,6 +29,8 @@ interface AppContextType {
   applications: any[];
   receivedApplications: any[];
   refreshMyPets: () => Promise<Pet[]>;
+  notifications: any[];
+  refreshNotifications: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -41,6 +43,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isLoading, setIsLoading] = useState(true);
   const [applications, setApplications] = useState<any[]>([]);
   const [receivedApplications, setReceivedApplications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   const refreshPets = React.useCallback(async () => {
     try {
@@ -111,16 +114,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [user]);
 
+  const refreshNotifications = React.useCallback(async () => {
+    if (!user || user.role !== 'coordinator') return;
+    try {
+      const fetchedNotifications = await api.getNotifications(user.id);
+      setNotifications(fetchedNotifications);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  }, [user]);
+
   const refreshData = React.useCallback(async () => {
     setIsLoading(true);
     await Promise.all([
       refreshPets(),
       refreshChats(),
       refreshApplications(),
-      refreshReceivedApplications()
+      refreshReceivedApplications(),
+      refreshNotifications()
     ]);
     setIsLoading(false);
-  }, [refreshPets, refreshChats, refreshApplications, refreshReceivedApplications]);
+  }, [refreshPets, refreshChats, refreshApplications, refreshReceivedApplications, refreshNotifications]);
 
   const markChatAsReadLocally = React.useCallback((chatId: string) => {
     setChats(prev => prev.map(chat =>
@@ -196,7 +210,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       markChatAsReadLocally,
       applications,
       receivedApplications,
-      refreshMyPets
+      refreshMyPets,
+      notifications,
+      refreshNotifications
     }}>
       {children}
     </AppContext.Provider>

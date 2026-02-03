@@ -50,6 +50,9 @@ export interface ChatSession {
   petImage: string;
   coordinatorName: string;
   coordinatorImage: string;
+  otherParticipantName: string;
+  otherParticipantImage: string;
+  otherParticipantRole: string;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;

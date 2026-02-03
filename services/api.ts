@@ -104,6 +104,12 @@ export const api = {
         return res.json();
     },
 
+    getNotifications: async (userId: string) => {
+        const res = await fetch(`${API_BASE_URL}/applications/notifications?user_id=${userId}`);
+        if (!res.ok) throw new Error('Failed to fetch notifications');
+        return res.json();
+    },
+
     submitApplication: async (data: any) => {
         const res = await fetch(`${API_BASE_URL}/applications`, {
             method: 'POST',
@@ -132,6 +138,14 @@ export const api = {
         });
         if (!res.ok) throw new Error('Failed to update application status');
         return res.json();
+    },
+
+    updatePetStatus: async (id: string, isAdopted: boolean) => {
+    const res = await fetch(`${API_BASE_URL}/pets/${id}/status?isAdopted=${isAdopted}`, {
+        method: 'PUT'
+    });
+    if (!res.ok) throw new Error('Failed to update pet status');
+    return res.json();
     },
 
     register: async (data: any) => {
@@ -182,5 +196,11 @@ export const api = {
             throw new Error(err.detail || 'Failed to delete pet');
         }
         return res.json();
-    }
+    },
+    
+    getApplication: async (id: string) => {
+    const res = await fetch(`${API_BASE_URL}/applications/${id}`);
+    if (!res.ok) throw new Error('Failed to get application');
+    return res.json();
+   },
 };

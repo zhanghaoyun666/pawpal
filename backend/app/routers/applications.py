@@ -60,14 +60,27 @@ def create_application(application: ApplicationCreate):
             # Send Auto-Reply
             if conversation_id:
                 print(f"DEBUG: Sending message to conversation_id={conversation_id}")
+                
+                # 获取申请人信息，使回复更个性化
+                user_res = supabase.table("users").select("name").eq("id", user_id).single().execute()
+                applicant_name = user_res.data.get('name', '申请人') if user_res.data else '申请人'
+                
+                # 获取宠物信息
+                pet_res = supabase.table("pets").select("name").eq("id", app_data['pet_id']).single().execute()
+                pet_name = pet_res.data.get('name', '宠物') if pet_res.data else '宠物'
+                
                 message = {
                     "conversation_id": conversation_id,
                     "sender_id": owner_id,
-                    "content": "收到您的领养申请了！我会尽快审核，请留意消息。",
+                    "content": f"您好{applicant_name}！感谢您对{pet_name}的领养申请。我已经收到了您的申请，会尽快进行审核。请随时通过这里与我沟通，了解更多信息。",
                     "read": False
                 }
                 supabase.table("messages").insert(message).execute()
                 print("DEBUG: Auto-reply message inserted successfully")
+                
+                # 更新对话时间戳，确保显示在列表顶部
+                supabase.table("conversations").update({"updated_at": "now()"}).eq("id", conversation_id).execute()
+                print("DEBUG: Conversation timestamp updated")
             else:
                 print("DEBUG: FAILED to get or create conversation_id")
         else:
@@ -78,6 +91,20 @@ def create_application(application: ApplicationCreate):
         import traceback
         traceback.print_exc()
         # Continue even if auto-reply fails, as the application itself was successful
+        
+    # 3. 实时通知送养人
+    try:
+        # 获取送养人的所有活跃对话
+        owner_conv_res = supabase.table("conversations").select("id, updated_at").eq("user_id", owner_id).execute()
+        
+        # 更新所有对话的时间戳，确保新申请显示在顶部
+        if owner_conv_res.data:
+            for conv in owner_conv_res.data:
+                supabase.table("conversations").update({"updated_at": "now()"}).eq("id", conv['id']).execute()
+        
+        print("DEBUG: Owner conversation timestamps updated for real-time notification")
+    except Exception as e:
+        print(f"DEBUG: Failed to update owner conversation timestamps: {e}")
         
     return new_app
 
@@ -188,3 +215,48 @@ def delete_application(id: str, user_id: str = None):
         raise HTTPException(status_code=500, detail="Failed to delete application")
         
     return {"status": "success", "message": "领养记录已删除"}
+
+@router.get("/notifications", response_model=List[dict])
+def get_notifications(user_id: str = None):
+    """
+    获取送养人的实时通知
+    """
+    target_id = user_id if user_id else TEST_USER_ID
+    
+    # 获取用户拥有的宠物
+    pets_res = supabase.table("pets").select("id, name").eq("owner_id", target_id).execute()
+    owned_pet_ids = [p['id'] for p in pets_res.data]
+    
+    # 获取最近24小时内的申请
+    import datetime
+    yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
+    
+    recent_apps_res = supabase.table("applications").select("*")\
+        .in_("pet_id", owned_pet_ids)\
+        .gte("created_at", yesterday.isoformat())\
+        .order("created_at", desc=True)\
+        .limit(10)\
+        .execute()
+    
+    notifications = []
+    for app in recent_apps_res.data:
+        # 获取申请人信息
+        user_res = supabase.table("users").select("name").eq("id", app['user_id']).single().execute()
+        applicant_name = user_res.data.get('name', '申请人') if user_res.data else '申请人'
+        
+        # 获取宠物信息
+        pet_info = next((p for p in pets_res.data if p['id'] == app['pet_id']), None)
+        pet_name = pet_info.get('name', '宠物') if pet_info else '宠物'
+        
+        notifications.append({
+            "id": app['id'],
+            "type": "new_application",
+            "title": f"新的领养申请",
+            "message": f"{applicant_name}申请领养{pet_name}",
+            "created_at": app['created_at'],
+            "status": app['status'],
+            "pet_id": app['pet_id'],
+            "applicant_id": app['user_id']
+        })
+    
+    return notifications

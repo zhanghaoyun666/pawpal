@@ -113,28 +113,3 @@ export const CATEGORIES: Category[] = [
   },
   { id: 'other', name: '其他', icon: 'more_horiz', isIcon: true }
 ];
-
-export const CHATS: ChatSession[] = [
-  {
-    id: '1',
-    petId: '1',
-    petName: 'Max',
-    petImage: PETS[0].image,
-    coordinatorName: 'Sarah Wilson',
-    coordinatorImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDPVpLiTvjm3XOaQwsBrF6Qrltmi8yr7_fSnxcOTBNe2iwxvEZ5IuLrtEkD4T9Yp1mDiX9wrRVzH2a6zzTeUKoAaP90CdNTbpDLpEQkqFQEBBF6iUbvMGFj93CvOllMZo9jdmXquulhZY1umcQKVWu4jIoBn3UPTzlGRCZ_XdXxzRAFA5XtDAy0MhFV4I_rIX2m8SoMWjPToqk63I5x780gfOc3R7hWC3Nf0iOC70HGXlInN7XjLA0fgq5W7LX8ERxXPJ2YAkeIIjw',
-    lastMessage: '好的，我们约周六见面！',
-    lastMessageTime: '09:45 AM',
-    unreadCount: 0
-  },
-  {
-    id: '2',
-    petId: '2',
-    petName: 'Luna',
-    petImage: PETS[1].image,
-    coordinatorName: 'Emily Chen',
-    coordinatorImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBBPhotk3xjpng2lG1eVnPl8LCPT16pAinrsh1zTSZKto270J6vCRdhCN2nPcvPqzz6jTKEL_T5N_PCrsQ58oIEIS7h7B9xe9mURXw06C1LRvbofa-MOJOHfn_GNkDIj1j5-WfIHwlSF_8_CkanEGMj_RXs8oIpArrJSyEAcxdLV3Q4qDuA1uMRbLCZByPpDg4l4ft9ZRPsYXmdZ5IXtGbXB1PAbmt_jGfHLibk9IFemYOdWbTGhJ6eS9CDAfY0isE-O0Y-3MSkwk4',
-    lastMessage: '她已经打完疫苗了。',
-    lastMessageTime: '昨天',
-    unreadCount: 2
-  }
-];

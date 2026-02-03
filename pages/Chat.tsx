@@ -9,6 +9,14 @@ const Chat: React.FC = () => {
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { chats, user, refreshChats, markChatAsReadLocally } = useApp();
+  
+  // 从URL参数获取用户ID和宠物ID（用于送养人直接与申请人沟通）
+  const urlParams = new URLSearchParams(location.search);
+  const urlUserId = urlParams.get('user_id');
+  const urlPetId = urlParams.get('pet_id');
+  
+  // 如果提供了URL参数，则创建或获取与该申请人的对话
+  const [chatForApplicant, setChatForApplicant] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +38,7 @@ const Chat: React.FC = () => {
       // Parallelize fetches for better performance
       Promise.all([
         api.getMessages(id, user.id),
-        api.markAsRead(id, user.id)
+        api.markAsRead(effectiveChatId, user.id)
       ]).then(([fetchedMessages]) => {
         setMessages(fetchedMessages);
         setLoading(false);
@@ -44,11 +52,73 @@ const Chat: React.FC = () => {
       // Poll for messages every 5s for simple MVP real-time
       const interval = setInterval(() => {
         // Polling should NOT trigger loading state
-        api.getMessages(id, user.id).then(setMessages).catch(console.error);
+        api.getMessages(effectiveChatId, user.id).then(setMessages).catch(console.error);
       }, 5000);
       return () => clearInterval(interval);
     }
   }, [id, user, refreshChats, markChatAsReadLocally]);
+  
+  // 处理URL参数，用于送养人直接与申请人沟通
+  useEffect(() => {
+    if (urlUserId && urlPetId && user) {
+      // 查找或创建与该申请人的对话
+      const findOrCreateChat = async () => {
+        try {
+          // 获取用户作为申请人的对话
+          const userAsApplicantChats = await api.getChats(urlUserId);
+          
+          // 查找与特定宠物相关的对话
+          let targetChat = userAsApplicantChats.find(chat => 
+            chat.petId === urlPetId && 
+            (chat.otherParticipantName === user.name || chat.coordinatorName === user.name)
+          );
+          
+          if (targetChat) {
+            setChatForApplicant(targetChat.id);
+            return targetChat.id;
+          } else {
+            // 如果没有找到对话，创建一个新的
+            // 注意：这里需要后端支持创建对话的API
+            alert('未找到与该申请人的对话，请联系管理员');
+            return null;
+          }
+        } catch (error) {
+          console.error('Error finding chat:', error);
+          return null;
+        }
+      };
+      
+      findOrCreateChat().then(chatId => {
+        if (chatId) {
+          // 加载对话消息
+          setLoading(true);
+          Promise.all([
+            api.getMessages(chatId, user.id),
+            api.markAsRead(chatId, user.id)
+          ]).then(([fetchedMessages]) => {
+            setMessages(fetchedMessages);
+            setLoading(false);
+          }).catch(err => {
+            console.error("Load failed", err);
+            setLoading(false);
+          });
+          
+          // 设置轮询
+          const interval = setInterval(() => {
+            api.getMessages(chatId, user.id).then(setMessages).catch(console.error);
+          }, 5000);
+          
+          return () => {
+            clearInterval(interval);
+            setChatForApplicant(null);
+          };
+        }
+      });
+    }
+  }, [urlUserId, urlPetId, user]);
+  
+  // 如果有通过URL参数找到的对话，则使用该对话ID
+  const effectiveChatId = chatForApplicant || id;
 
   useEffect(() => {
     if (!loading) {
@@ -57,7 +127,7 @@ const Chat: React.FC = () => {
   }, [messages, loading]);
 
   const handleSend = async () => {
-    if (!inputText.trim() || !id || !user) return;
+    if (!inputText.trim() || !effectiveChatId || !user) return;
 
     const tempId = Date.now().toString();
     const optimisticMessage: Message = {
@@ -72,9 +142,9 @@ const Chat: React.FC = () => {
     setInputText('');
 
     try {
-      await api.sendMessage(id, inputText, user.id);
+      await api.sendMessage(effectiveChatId, inputText, user.id);
       // Refresh to get server timestamp/ID
-      const updatedMessages = await api.getMessages(id, user.id);
+      const updatedMessages = await api.getMessages(effectiveChatId, user.id);
       setMessages(updatedMessages);
     } catch (error) {
       console.error("Failed to send", error);
@@ -82,9 +152,9 @@ const Chat: React.FC = () => {
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!id || !user || !window.confirm('确定要删除这条消息吗？')) return;
+    if (!effectiveChatId || !user || !window.confirm('确定要删除这条消息吗？')) return;
     try {
-      await api.deleteMessage(id, messageId, user.id);
+      await api.deleteMessage(effectiveChatId, messageId, user.id);
       setMessages(prev => prev.filter(m => m.id !== messageId));
     } catch (error) {
       console.error("Failed to delete message", error);
