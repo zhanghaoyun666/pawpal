@@ -28,6 +28,7 @@ interface AppContextType {
   markChatAsReadLocally: (chatId: string) => void;
   applications: any[];
   receivedApplications: any[];
+  refreshMyPets: () => Promise<Pet[]>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -43,6 +44,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const refreshPets = React.useCallback(async () => {
     try {
+      // 首页不显示已领养的宠物
       const fetchedPets = await api.getPets();
       setPets(fetchedPets);
       
@@ -65,6 +67,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [user]);
 
+  // 新增函数：获取用户发布的所有宠物（包括已领养的）
+  const refreshMyPets = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      // 我的发布页面显示所有宠物，包括已领养的
+      const myPets = await api.getPets(user.id, true);
+      return myPets;
+    } catch (error) {
+      console.error("Failed to fetch my pets:", error);
+      return [];
+    }
+  }, [user]);
+
   const refreshChats = React.useCallback(async () => {
     if (!user) return;
     try {
@@ -78,7 +93,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const refreshApplications = React.useCallback(async () => {
     if (!user) return;
     try {
-      const fetchedApps = await api.getApplications(user.id);
+      // 获取所有申请记录，包括已批准的
+      const fetchedApps = await api.getApplications(user.id, true);
       setApplications(fetchedApps);
     } catch (error) {
       console.error("Failed to fetch apps:", error);
@@ -172,7 +188,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       refreshReceivedApplications,
       markChatAsReadLocally,
       applications,
-      receivedApplications
+      receivedApplications,
+      refreshMyPets
     }}>
       {children}
     </AppContext.Provider>

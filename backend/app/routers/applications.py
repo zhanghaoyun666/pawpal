@@ -82,11 +82,12 @@ def create_application(application: ApplicationCreate):
     return new_app
 
 @router.get("/", response_model=List[Application])
-def get_my_applications(user_id: str = None):
+def get_my_applications(user_id: str = None, include_approved: bool = True):
     # If user_id is provided, filter by it. Otherwise fallback to TEST_USER_ID or empty.
     target_id = user_id if user_id else TEST_USER_ID
     
     # 1. Fetch applications
+    # 默认包含所有申请，包括已批准的
     response = supabase.table("applications").select("*").eq("user_id", target_id).execute()
     apps = response.data
     

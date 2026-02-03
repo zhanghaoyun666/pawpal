@@ -143,9 +143,9 @@ def _format_pet(item, is_adopted=False):
     return item
 
 @router.get("/", response_model=List[Pet])
-def get_pets(owner_id: str = None):
+def get_pets(owner_id: str = None, include_adopted: bool = False):
     # Fetch pets with owner details
-    print(f"DEBUG: get_pets called with owner_id={owner_id}")
+    print(f"DEBUG: get_pets called with owner_id={owner_id}, include_adopted={include_adopted}")
     query = supabase.table("pets").select("*, owner:users(name, role, avatar_url)")
     
     if owner_id:
@@ -157,8 +157,13 @@ def get_pets(owner_id: str = None):
     
     formatted_data = []
     for item in data:
-        # Check if the pet has been adopted
+        # Check if pet has been adopted
         is_adopted = _check_if_adopted(item.get('id', ''))
+        
+        # Filter out adopted pets unless include_adopted is True
+        if is_adopted and not include_adopted and not owner_id:
+            continue
+            
         formatted_item = _format_pet(item, is_adopted=is_adopted)
         if formatted_item:
             formatted_data.append(formatted_item)
@@ -183,6 +188,11 @@ def delete_pet(pet_id: str):
     pet_response = supabase.table("pets").select("id").eq("id", pet_id).single().execute()
     if not pet_response.data:
         raise HTTPException(status_code=404, detail="Pet not found")
+    
+    # Check if pet has been adopted
+    is_adopted = _check_if_adopted(pet_id)
+    if is_adopted:
+        raise HTTPException(status_code=400, detail="已领养的宠物无法下架")
         
     # Delete pet
     response = supabase.table("pets").delete().eq("id", pet_id).execute()

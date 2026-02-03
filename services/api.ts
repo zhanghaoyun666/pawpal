@@ -10,8 +10,11 @@ const getAuthHeaders = () => {
 };
 
 export const api = {
-    getPets: async (ownerId?: string): Promise<Pet[]> => {
-        const url = ownerId ? `${API_BASE_URL}/pets?owner_id=${ownerId}` : `${API_BASE_URL}/pets`;
+    getPets: async (ownerId?: string, includeAdopted?: boolean): Promise<Pet[]> => {
+        let url = ownerId ? `${API_BASE_URL}/pets?owner_id=${ownerId}` : `${API_BASE_URL}/pets`;
+        if (includeAdopted) {
+            url += `&include_adopted=true`;
+        }
         const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch pets');
         return res.json();
@@ -59,7 +62,7 @@ export const api = {
         const res = await fetch(`${API_BASE_URL}/chats/${chatId}/messages?user_id=${userId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ conversation_id: chatId, text, sender_id: userId })
+            body: JSON.stringify({ text })
         });
         if (!res.ok) throw new Error('Failed to send message');
         return res.json();
@@ -110,8 +113,8 @@ export const api = {
         return res.json();
     },
 
-    getApplications: async (userId: string) => {
-        const res = await fetch(`${API_BASE_URL}/applications?user_id=${userId}`);
+    getApplications: async (userId: string, includeApproved: boolean = true) => {
+        const res = await fetch(`${API_BASE_URL}/applications?user_id=${userId}&include_approved=${includeApproved}`);
         if (!res.ok) throw new Error('Failed to fetch applications');
         return res.json();
     },

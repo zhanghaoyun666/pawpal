@@ -26,6 +26,12 @@ const AdoptionHistory: React.FC = () => {
         }
     };
 
+    // 获取宠物详情函数
+    const handleViewPet = async (petId: string) => {
+        if (!petId) return;
+        navigate(`/details/${petId}`);
+    };
+
     return (
         <div className="flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark max-w-md mx-auto">
             <header className="flex items-center p-4 sticky top-0 z-10 bg-background-light dark:bg-background-dark border-b border-gray-100 dark:border-gray-800">
@@ -48,10 +54,21 @@ const AdoptionHistory: React.FC = () => {
                         {applications.map((app) => (
                             <div key={app.id} className="bg-card-light dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
                                 <div className="flex items-center gap-4 mb-3">
-                                    <div className="w-16 h-16 rounded-xl bg-gray-200 bg-cover bg-center" style={{ backgroundImage: `url(${app.pet?.image})` }}></div>
+                                    <div 
+                                        className="w-16 h-16 rounded-xl bg-gray-200 bg-cover bg-center cursor-pointer hover:opacity-80 transition-opacity" 
+                                        style={{ backgroundImage: `url(${app.pet?.image})` }}
+                                        onClick={() => handleViewPet(app.pet_id)}
+                                        title="查看宠物详情"
+                                    ></div>
                                     <div className="flex-1">
                                         <div className="flex justify-between items-start">
-                                            <h4 className="font-bold text-lg">{app.pet?.name}</h4>
+                                            <h4 
+                                                className="font-bold text-lg cursor-pointer hover:text-primary transition-colors" 
+                                                onClick={() => handleViewPet(app.pet_id)}
+                                                title="查看宠物详情"
+                                            >
+                                                {app.pet?.name}
+                                            </h4>
                                             {app.status !== 'approved' && (
                                                 <button
                                                     onClick={() => handleDelete(app.id, app.status)}

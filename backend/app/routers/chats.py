@@ -26,9 +26,26 @@ def get_chats(user_id: str = None):
     if my_pet_ids:
         coord_conv_res = supabase.table("conversations").select("*").in_("pet_id", my_pet_ids).execute()
         coord_convs = coord_conv_res.data
+        
+    # 3. 确保所有相关对话都被获取，包括可能遗漏的对话
+    # 获取用户参与的所有对话（无论是作为申请人还是送养人）
+    all_user_convs = []
+    if my_pet_ids:
+        # 使用正确的Supabase语法：分别查询用户作为申请人的对话和作为送养人的对话
+        user_as_applicant_res = supabase.table("conversations").select("*").eq("user_id", target_id).execute()
+        user_as_owner_res = supabase.table("conversations").select("*").in_("pet_id", my_pet_ids).execute()
+        
+        # 合并结果并去重
+        all_convs = user_as_applicant_res.data + user_as_owner_res.data
+        # 使用字典去重
+        all_user_convs = list({c['id']: c for c in all_convs}.values())
+    else:
+        # 如果用户没有宠物，只获取作为申请人的对话
+        user_as_applicant_res = supabase.table("conversations").select("*").eq("user_id", target_id).execute()
+        all_user_convs = user_as_applicant_res.data
 
     # Merge results and deduplicate
-    all_raw_convs = list({c['id']: c for c in (app_convs + coord_convs)}.values())
+    all_raw_convs = list({c['id']: c for c in (app_convs + coord_convs + all_user_convs)}.values())
     
     if not all_raw_convs:
         return []
@@ -112,12 +129,31 @@ def get_chats(user_id: str = None):
 @router.get("/{id}/messages", response_model=List[Message])
 def get_messages(id: str, user_id: str = None):
     target_id = user_id if user_id else TEST_USER_ID
+    
+    # 获取对话信息以确定参与者角色
+    conv_res = supabase.table("conversations").select("*, pets!inner(*)").eq("id", id).execute()
+    if not conv_res.data:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    conv = conv_res.data[0]
+    pet_owner_id = conv['pets']['owner_id']
+    applicant_id = conv['user_id']
+    
+    # 获取消息
     response = supabase.table("messages").select("*").eq("conversation_id", id).order("created_at").execute()
     
     messages = []
     for item in response.data:
-        # Map fields to frontend schema
-        sender = 'user' if item['sender_id'] == target_id else 'coordinator'
+        # 更精确地确定发送者角色
+        if item['sender_id'] == target_id:
+            sender = 'user'
+        elif target_id == pet_owner_id:
+            # 当前用户是送养人，那么对方是申请人
+            sender = 'coordinator'
+        else:
+            # 当前用户是申请人，那么对方是送养人
+            sender = 'coordinator'
+            
         messages.append({
             "id": item['id'],
             "sender": sender,
@@ -130,14 +166,23 @@ def get_messages(id: str, user_id: str = None):
 @router.put("/{id}/read")
 def mark_as_read(id: str, user_id: str = None):
     target_id = user_id if user_id else TEST_USER_ID
-    # Mark all messages in this conversation as read if the recipient is the target_id
-    # Note: In our current simple schema, sender_id is stored.
-    # We mark as read messages where sender_id != target_id
+    
+    # 获取对话信息以确定参与者角色
+    conv_res = supabase.table("conversations").select("*, pets!inner(*)").eq("id", id).execute()
+    if not conv_res.data:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    conv = conv_res.data[0]
+    pet_owner_id = conv['pets']['owner_id']
+    applicant_id = conv['user_id']
+    
+    # 确定哪些消息需要标记为已读（不是当前用户发送的消息）
     response = supabase.table("messages")\
         .update({"read": True})\
         .eq("conversation_id", id)\
         .neq("sender_id", target_id)\
         .execute()
+        
     return {"status": "success", "updated_count": len(response.data) if response.data else 0}
 
 @router.post("/{id}/messages")
