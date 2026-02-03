@@ -23,12 +23,7 @@ const MyPublications: React.FC = () => {
         }
     }, [user, refreshMyPets]);
 
-    const handleDelete = async (petId: string, petName: string, isAdopted: boolean) => {
-        if (isAdopted) {
-            alert('已领养的宠物无法下架');
-            return;
-        }
-        
+    const handleDelete = async (petId: string, petName: string) => {
         if (window.confirm(`确定要下架宠物"${petName}"吗？`)) {
             try {
                 await api.deletePet(petId);
@@ -68,20 +63,9 @@ const MyPublications: React.FC = () => {
                     <div className="space-y-4">
                         {pets.map((pet) => (
                             <div key={pet.id} className="bg-card-light dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-4">
-                                <div className="w-20 h-20 rounded-xl bg-gray-200 bg-cover bg-center relative" style={{ backgroundImage: `url(${pet.image})` }}>
-                                    {pet.isAdopted && (
-                                        <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
-                                            <span className="text-white text-xs font-bold">已领养</span>
-                                        </div>
-                                    )}
-                                </div>
+                                <div className="w-20 h-20 rounded-xl bg-gray-200 bg-cover bg-center" style={{ backgroundImage: `url(${pet.image})` }}></div>
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <h4 className="font-bold text-lg">{pet.name}</h4>
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${pet.isAdopted ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'}`}>
-                                            {pet.isAdopted ? '已领养' : '未领养'}
-                                        </span>
-                                    </div>
+                                    <h4 className="font-bold text-lg">{pet.name}</h4>
                                     <div className="flex gap-2 mt-1">
                                         <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{pet.breed}</span>
                                         <span className="text-xs bg-gray-100 dark:bg-white/10 text-gray-500 px-2 py-0.5 rounded-full">{pet.category === 'dog' ? '狗狗' : '猫猫'}</span>
@@ -100,12 +84,11 @@ const MyPublications: React.FC = () => {
                                         <span className="material-symbols-outlined">visibility</span>
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(pet.id, pet.name, pet.isAdopted || false)}
-                                        className={`p-2 rounded-full transition-colors ${pet.isAdopted ? 'text-gray-400 cursor-not-allowed' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
-                                        title={pet.isAdopted ? "已领养的宠物无法下架" : "下架"}
-                                        disabled={pet.isAdopted}
+                                        onClick={() => handleDelete(pet.id, pet.name)}
+                                        className="p-2 rounded-full transition-colors text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                        title="下架"
                                     >
-                                        <span className="material-symbols-outlined">{pet.isAdopted ? 'lock' : 'delete'}</span>
+                                        <span className="material-symbols-outlined">delete</span>
                                     </button>
                                 </div>
                             </div>

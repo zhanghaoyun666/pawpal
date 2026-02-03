@@ -14,38 +14,23 @@ def get_chats(user_id: str = None):
     # We want to fetch conversations where the user is either the applicant (user_id)
     # OR the coordinator (owner of the pet).
     
-    # 1. Fetch conversations where user is applicant
-    app_conv_res = supabase.table("conversations").select("*").eq("user_id", target_id).execute()
-    app_convs = app_conv_res.data
-    
-    # 2. Fetch conversations for pets owned by this user
+    # 1. 获取用户拥有的所有宠物ID
     my_pets_res = supabase.table("pets").select("id").eq("owner_id", target_id).execute()
     my_pet_ids = [p['id'] for p in my_pets_res.data]
     
-    coord_convs = []
+    # 2. 获取用户作为申请人的对话
+    user_as_applicant_res = supabase.table("conversations").select("*").eq("user_id", target_id).execute()
+    user_as_applicant_convs = user_as_applicant_res.data
+    
+    # 3. 获取用户作为送养人的对话（即用户拥有的宠物相关的对话）
+    user_as_owner_convs = []
     if my_pet_ids:
-        coord_conv_res = supabase.table("conversations").select("*").in_("pet_id", my_pet_ids).execute()
-        coord_convs = coord_conv_res.data
-        
-    # 3. 确保所有相关对话都被获取，包括可能遗漏的对话
-    # 获取用户参与的所有对话（无论是作为申请人还是送养人）
-    all_user_convs = []
-    if my_pet_ids:
-        # 使用正确的Supabase语法：分别查询用户作为申请人的对话和作为送养人的对话
-        user_as_applicant_res = supabase.table("conversations").select("*").eq("user_id", target_id).execute()
         user_as_owner_res = supabase.table("conversations").select("*").in_("pet_id", my_pet_ids).execute()
-        
-        # 合并结果并去重
-        all_convs = user_as_applicant_res.data + user_as_owner_res.data
-        # 使用字典去重
-        all_user_convs = list({c['id']: c for c in all_convs}.values())
-    else:
-        # 如果用户没有宠物，只获取作为申请人的对话
-        user_as_applicant_res = supabase.table("conversations").select("*").eq("user_id", target_id).execute()
-        all_user_convs = user_as_applicant_res.data
-
-    # Merge results and deduplicate
-    all_raw_convs = list({c['id']: c for c in (app_convs + coord_convs + all_user_convs)}.values())
+        user_as_owner_convs = user_as_owner_res.data
+    
+    # 4. 合并结果并去重
+    all_convs = user_as_applicant_convs + user_as_owner_convs
+    all_raw_convs = list({c['id']: c for c in all_convs}.values())
     
     if not all_raw_convs:
         return []

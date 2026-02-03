@@ -10,39 +10,33 @@ const CoordinatorDashboard: React.FC = () => {
     const [showNotifications, setShowNotifications] = useState(false);
 
     useEffect(() => {
-        if (user) {
-            // 使用AppContext中的receivedApplications状态
-            setLoading(false);
-            // 定期刷新通知（每30秒）
-            const interval = setInterval(() => {
-                refreshNotifications();
-            }, 30000);
-            
-            return () => clearInterval(interval);
+    if (user) {
+        // 使用AppContext中的receivedApplications状态
+        setLoading(false);
+        
+        // 立即刷新一次
+        refreshReceivedApplications().catch(console.error);
+        
+        // 添加轮询，每10秒刷新一次收到的申请
+        const interval = setInterval(() => {
+            refreshReceivedApplications().catch(console.error);
+        }, 10000);
+        
+        return () => clearInterval(interval);
         }
-    }, [user, receivedApplications, refreshNotifications]);
+    }, [user, receivedApplications, refreshReceivedApplications]);
 
     const handleUpdateStatus = async (appId: string, newStatus: string) => {
-    try {
-        // 先获取申请详情以获取宠物ID
-        const application = await api.getApplication(appId);
-        
-        // 更新申请状态
-        await api.updateApplicationStatus(appId, newStatus);
-        
-        // 如果申请被批准，更新宠物状态为已领养
-        if (newStatus === 'approved' && application.pet_id) {
-            await api.updatePetStatus(application.pet_id, true);
+        try {
+            await api.updateApplicationStatus(appId, newStatus);
+            // 使用AppContext中的refreshReceivedApplications函数
+            await refreshReceivedApplications();
+            alert(newStatus === 'approved' ? '已批准领养申请' : '已拒绝领养申请');
+        } catch (e) {
+            console.error(e);
+            alert('操作失败');
         }
-        
-        // 刷新数据
-        await refreshReceivedApplications();
-        alert(newStatus === 'approved' ? '已批准领养申请' : '已拒绝领养申请');
-    } catch (e) {
-        console.error(e);
-        alert('操作失败');
-    }
-};
+    };
 
     return (
         <div className="flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark max-w-md mx-auto">

@@ -64,13 +64,13 @@ const Chat: React.FC = () => {
       // 查找或创建与该申请人的对话
       const findOrCreateChat = async () => {
         try {
-          // 获取用户作为申请人的对话
-          const userAsApplicantChats = await api.getChats(urlUserId);
+          // 获取当前用户的所有对话
+          const allUserChats = await api.getChats(user.id);
           
-          // 查找与特定宠物相关的对话
-          let targetChat = userAsApplicantChats.find(chat => 
+          // 查找与特定宠物和申请人相关的对话
+          let targetChat = allUserChats.find(chat => 
             chat.petId === urlPetId && 
-            (chat.otherParticipantName === user.name || chat.coordinatorName === user.name)
+            chat.otherParticipantRole === 'user' // 申请人角色是user
           );
           
           if (targetChat) {
@@ -150,6 +150,31 @@ const Chat: React.FC = () => {
       console.error("Failed to send", error);
     }
   };
+  
+  // 在现有的 useEffect 中，确保轮询正常工作  
+  useEffect(() => {
+    if (id && user) {
+      // 加载初始消息
+      setLoading(true);
+      Promise.all([
+        api.getMessages(id, user.id),
+        api.markAsRead(id, user.id)
+      ]).then(([fetchedMessages]) => {
+        setMessages(fetchedMessages);
+        setLoading(false);
+      }).catch(err => {
+        console.error("Load failed", err);
+        setLoading(false);
+      });
+
+      // 消息轮询，每5秒刷新一次
+      const interval = setInterval(() => {
+        api.getMessages(id, user.id).then(setMessages).catch(console.error);
+      }, 5000);
+    
+      return () => clearInterval(interval);
+    }
+  }, [id, user, refreshChats, markChatAsReadLocally]);
 
   const handleDeleteMessage = async (messageId: string) => {
     if (!effectiveChatId || !user || !window.confirm('确定要删除这条消息吗？')) return;

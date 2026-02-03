@@ -160,6 +160,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [user, refreshReceivedApplications]);
 
+  // 在现有的 useEffect 后面添加
+  useEffect(() => {
+    if (user?.id) {
+      // 全局轮询，每30秒刷新一次非关键数据
+      const globalPolling = setInterval(() => {
+        refreshChats().catch(console.error);
+        refreshApplications().catch(console.error);
+       refreshReceivedApplications().catch(console.error);
+      }, 30000);
+    
+      return () => clearInterval(globalPolling);
+    }
+  }, [user?.id, refreshChats, refreshApplications, refreshReceivedApplications]);
+
   const login = (token: string, userData: User) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
