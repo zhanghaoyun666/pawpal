@@ -19,6 +19,8 @@ app.add_middleware(
 
 from app.routers import pets, users, chats, applications, auth, websocket as ws_router
 from app.routers import sse as sse_router
+from app.routers import ai as ai_router
+from app.routers import ai_v2 as ai_v2_router  # 新的 AI V2 路由
 from app.routers.chats import set_sse_manager
 
 # 设置 SSE 管理器到 chats 模块
@@ -33,11 +35,27 @@ app.include_router(auth.router)
 app.include_router(ws_router.router)
 # SSE 路由（Vercel 支持）
 app.include_router(sse_router.router)
+# AI 功能路由（旧版本，兼容）
+app.include_router(ai_router.router)
+# AI 功能路由 V2（新实现，对齐 PRD）
+app.include_router(ai_v2_router.router)
 
 @app.get("/")
 def read_root():
     return {
         "message": "Welcome to PawPal API",
-        "websocket": "/ws/chat",
-        "sse": "/api/sse/connect?user_id=xxx"
+        "version": "2.0",
+        "features": [
+            "websocket",
+            "sse",
+            "ai_questionnaire",
+            "ai_matching_v2",
+            "ai_precheck_v2"
+        ],
+        "endpoints": {
+            "websocket": "/ws/chat",
+            "sse": "/api/sse/connect?user_id=xxx",
+            "ai_v1": "/api/ai",
+            "ai_v2": "/api/ai/v2"
+        }
     }

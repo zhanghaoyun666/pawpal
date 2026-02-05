@@ -60,3 +60,27 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if not response.data:
         raise credentials_exception
     return response.data[0]
+
+
+def verify_token(token: str) -> Dict[str, Any]:
+    """
+    验证 JWT token
+    
+    Args:
+        token: JWT token 字符串
+    
+    Returns:
+        token 的 payload
+    
+    Raises:
+        HTTPException: token 无效
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

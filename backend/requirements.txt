@@ -8,3 +8,16 @@ passlib[bcrypt]==1.7.4  # 固定passlib版本
 python-jose[cryptography]
 python-multipart
 bcrypt==3.2.2  # 使用更兼容的bcrypt版本
+openai>=1.0.0
+httpx>=0.24.0
+
+# 本地 Embedding 模型 (BGE-large-zh)
+sentence-transformers>=2.2.0
+torch>=2.0.0
+numpy>=1.24.0
+
+# 本地 Embedding 模型
+sentence-transformers>=2.2.0
+torch>=2.0.0
+numpy>=1.24.0
+FlagEmbedding
