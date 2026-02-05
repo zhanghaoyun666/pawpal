@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 # LongCat API 配置
 LONGCAT_API_KEY = os.getenv("LONGCAT_API_KEY")
 LONGCAT_SECRET_KEY = os.getenv("LONGCAT_SECRET_KEY")  # 部分接口需要
-LONGCAT_BASE_URL = os.getenv("LONGCAT_BASE_URL", "https://api.ai.meituan.com/v1")
-LONGCAT_MODEL = os.getenv("LONGCAT_MODEL", "longcat-chat-7b")  # 或其他可用模型
+LONGCAT_BASE_URL = os.getenv("LONGCAT_BASE_URL", "https://api.longcat.chat/openai")
+LONGCAT_MODEL = os.getenv("LONGCAT_MODEL", "LongCat-Flash-Thinking")  # 或其他可用模型
 
 
 class LongCatService:
