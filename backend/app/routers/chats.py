@@ -3,16 +3,26 @@ from typing import List
 from app.database import supabase
 from app.constants import TEST_USER_ID
 from app.models.schemas import ChatSession, Message, MessageCreate
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chats", tags=["chats"])
+
+# SSE 管理器引用（将在 main.py 中设置）
+sse_manager = None
+
+
+def set_sse_manager(manager):
+    """设置 SSE 管理器"""
+    global sse_manager
+    sse_manager = manager
+
 
 @router.get("/", response_model=List[ChatSession])
 def get_chats(user_id: str = None):
     # Use provided user_id or fallback to TEST_USER_ID
     target_id = user_id if user_id else TEST_USER_ID
-    
-    # We want to fetch conversations where the user is either the applicant (user_id)
-    # OR the coordinator (owner of the pet).
     
     # 1. 获取用户拥有的所有宠物ID
     my_pets_res = supabase.table("pets").select("id").eq("owner_id", target_id).execute()
@@ -22,7 +32,7 @@ def get_chats(user_id: str = None):
     user_as_applicant_res = supabase.table("conversations").select("*").eq("user_id", target_id).execute()
     user_as_applicant_convs = user_as_applicant_res.data
     
-    # 3. 获取用户作为送养人的对话（即用户拥有的宠物相关的对话）
+    # 3. 获取用户作为送养人的对话
     user_as_owner_convs = []
     if my_pet_ids:
         user_as_owner_res = supabase.table("conversations").select("*").in_("pet_id", my_pet_ids).execute()
@@ -53,10 +63,7 @@ def get_chats(user_id: str = None):
     users_res = supabase.table("users").select("id, name, avatar_url, role").in_("id", list(all_p_ids)).execute()
     users_info = {u['id']: u for u in users_res.data}
 
-    # --- BATCH FETCH LAST MESSAGES ---
-    # We fetch ALL messages for these conversations, then pick the latest in Python.
-    # While this might seem heavy, for a few conversations it's much faster than N queries.
-    # A more advanced way is using a view or RPC, but this is a good hybrid.
+    # BATCH FETCH LAST MESSAGES
     all_msgs_res = supabase.table("messages")\
         .select("conversation_id, content, created_at, sender_id, read")\
         .in_("conversation_id", conv_ids)\
@@ -69,7 +76,7 @@ def get_chats(user_id: str = None):
     for m in all_msgs_res.data:
         cid = m['conversation_id']
         if cid not in messages_by_conv:
-            messages_by_conv[cid] = m # First one is the latest due to order
+            messages_by_conv[cid] = m
         
         # Calculate unread count (not from self)
         if m['sender_id'] != target_id and not m['read']:
@@ -111,6 +118,7 @@ def get_chats(user_id: str = None):
         
     return chats
 
+
 @router.get("/{id}/messages", response_model=List[Message])
 def get_messages(id: str, user_id: str = None):
     target_id = user_id if user_id else TEST_USER_ID
@@ -133,10 +141,8 @@ def get_messages(id: str, user_id: str = None):
         if item['sender_id'] == target_id:
             sender = 'user'
         elif target_id == pet_owner_id:
-            # 当前用户是送养人，那么对方是申请人
             sender = 'coordinator'
         else:
-            # 当前用户是申请人，那么对方是送养人
             sender = 'coordinator'
             
         messages.append({
@@ -148,60 +154,107 @@ def get_messages(id: str, user_id: str = None):
         })
     return messages
 
+
 @router.put("/{id}/read")
-def mark_as_read(id: str, user_id: str = None):
+async def mark_as_read(id: str, user_id: str = None):
     target_id = user_id if user_id else TEST_USER_ID
     
-    # 获取对话信息以确定参与者角色
+    # 获取对话信息
     conv_res = supabase.table("conversations").select("*, pets!inner(*)").eq("id", id).execute()
     if not conv_res.data:
         raise HTTPException(status_code=404, detail="Conversation not found")
     
-    conv = conv_res.data[0]
-    pet_owner_id = conv['pets']['owner_id']
-    applicant_id = conv['user_id']
-    
-    # 确定哪些消息需要标记为已读（不是当前用户发送的消息）
+    # 标记消息为已读
     response = supabase.table("messages")\
         .update({"read": True})\
         .eq("conversation_id", id)\
         .neq("sender_id", target_id)\
         .execute()
+    
+    # 通过 SSE 广播已读状态
+    if sse_manager:
+        await sse_manager.broadcast_to_chat(id, {
+            "type": "messages_read",
+            "chat_id": id,
+            "user_id": target_id,
+            "count": len(response.data) if response.data else 0
+        })
         
     return {"status": "success", "updated_count": len(response.data) if response.data else 0}
 
+
 @router.post("/{id}/messages")
-def send_message(id: str, message: MessageCreate, user_id: str = None):
+async def send_message(id: str, message: MessageCreate, user_id: str = None):
     target_id = user_id if user_id else TEST_USER_ID
+    
+    # 获取对话信息
+    conv_res = supabase.table("conversations").select("*, pets!inner(*)").eq("id", id).execute()
+    if not conv_res.data:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    conv = conv_res.data[0]
+    
     data = {
         "conversation_id": id,
         "sender_id": target_id,
         "content": message.text,
         "read": False
     }
+    
+    # 保存消息
     response = supabase.table("messages").insert(data).execute()
+    
+    if response.data:
+        message_record = response.data[0]
+        
+        # 更新对话时间
+        supabase.table("conversations").update({
+            "updated_at": "now()"
+        }).eq("id", id).execute()
+        
+        # 通过 SSE 广播新消息
+        if sse_manager:
+            await sse_manager.broadcast_to_chat(id, {
+                "type": "new_message",
+                "chat_id": id,
+                "message": {
+                    "id": message_record["id"],
+                    "sender_id": target_id,
+                    "text": message.text,
+                    "timestamp": message_record["created_at"],
+                    "isRead": False
+                }
+            })
+            
+            # 通知聊天列表更新
+            await sse_manager.broadcast_to_chat(id, {
+                "type": "chat_updated",
+                "chat_id": id
+            })
+    
     return response.data
+
 
 @router.delete("/{id}/messages/{message_id}")
 def delete_message(id: str, message_id: str, user_id: str = None):
     target_id = user_id if user_id else TEST_USER_ID
-    # Ensure the message belongs to the conversation and the user is the sender
-    # In a real app we'd check ownership strictly
+    
     response = supabase.table("messages")\
         .delete()\
         .eq("id", message_id)\
         .eq("conversation_id", id)\
         .eq("sender_id", target_id)\
         .execute()
+    
     if not response.data:
         raise HTTPException(status_code=404, detail="Message not found or you don't have permission")
+    
     return {"status": "success"}
+
 
 @router.delete("/{id}")
 def delete_conversation(id: str, user_id: str = None):
     target_id = user_id if user_id else TEST_USER_ID
-    # In a full implementation, we might soft-delete or check if user is a participant.
-    # For MVP, we'll allow a participant to delete the conversation (and its messages).
     
     # 1. Delete messages first due to FK constraints
     supabase.table("messages").delete().eq("conversation_id", id).execute()

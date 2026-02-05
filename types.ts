@@ -35,12 +35,17 @@ export interface Category {
   isIcon: boolean;
 }
 
+// 消息发送状态
+export type MessageStatus = 'sending' | 'sent' | 'failed';
+
 export interface Message {
   id: string;
   sender: 'user' | 'coordinator';
   text: string;
   timestamp: string;
   isRead?: boolean;
+  status?: MessageStatus;
+  imageUrl?: string;
 }
 
 export interface ChatSession {
