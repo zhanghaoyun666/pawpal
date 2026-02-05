@@ -15,6 +15,8 @@ import AdoptionHistory from './pages/AdoptionHistory';
 import CoordinatorDashboard from './pages/CoordinatorDashboard';
 import MyPublications from './pages/MyPublications';
 import HelpCenter from './pages/HelpCenter';
+import AIQuestionnaire from './pages/AIQuestionnaire';
+import AIRecommendations from './pages/AIRecommendations';
 
 const App: React.FC = () => {
   return (
@@ -35,6 +37,9 @@ const App: React.FC = () => {
           <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
           <Route path="/my-publications" element={<MyPublications />} />
           <Route path="/help" element={<HelpCenter />} />
+          {/* AI 功能路由 */}
+          <Route path="/ai-questionnaire" element={<AIQuestionnaire />} />
+          <Route path="/ai-recommendations" element={<AIRecommendations />} />
         </Routes>
       </Router>
     </AppProvider>

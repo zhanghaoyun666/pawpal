@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Message, MessageStatus } from '../types';
-import { useChatSSE } from '../hooks/useChatSSE';
+import { useChatPolling } from '../hooks/useChatPolling';
 
 // 消息发送状态
 interface MessageWithStatus extends Message {
@@ -56,14 +56,15 @@ const Chat: React.FC = () => {
 
   const chatInfo = chats.find(c => c.id === effectiveChatId);
 
-  // 处理新消息（SSE 接收）
-  const handleNewMessage = useCallback((msg: Message) => {
+  // 处理新消息（轮询接收）
+  const handleNewMessages = useCallback((newMessages: Message[]) => {
     setMessages(prev => {
-      // 检查是否已存在（避免重复）
-      if (prev.some(m => m.id === msg.id)) {
-        return prev;
-      }
-      return [...prev, { ...msg, status: 'sent' as MessageStatus }];
+      const existingIds = new Set(prev.map(m => m.id));
+      const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m.id));
+      
+      if (uniqueNewMessages.length === 0) return prev;
+      
+      return [...prev, ...uniqueNewMessages.map(m => ({ ...m, status: 'sent' as MessageStatus }))];
     });
     
     // 发送已读回执
@@ -75,29 +76,16 @@ const Chat: React.FC = () => {
     refreshChats().catch(console.error);
   }, [effectiveChatId, user, refreshChats]);
 
-  // 处理消息已读（SSE 接收）
-  const handleMessagesRead = useCallback((userId: string, count: number) => {
-    console.log(`用户 ${userId} 已读 ${count} 条消息`);
-    // 更新本地消息的已读状态
-    setMessages(prev => prev.map(msg => ({
-      ...msg,
-      isRead: true
-    })));
-  }, []);
-
-  // SSE Hook
+  // 轮询 Hook
   const {
-    status: sseStatus,
-    isConnected,
-    subscribe,
-    unsubscribe,
-    connect: connectSSE,
-    disconnect: disconnectSSE
-  } = useChatSSE({
-    userId: user?.id,
+    isPolling,
+    error: pollingError,
+    pollNow
+  } = useChatPolling({
     chatId: effectiveChatId,
-    onNewMessage: handleNewMessage,
-    onMessagesRead: handleMessagesRead
+    userId: user?.id,
+    enabled: !!effectiveChatId && !!user,
+    onNewMessages: handleNewMessages
   });
 
   // 加载历史消息
@@ -124,30 +112,20 @@ const Chat: React.FC = () => {
     markChatAsReadLocally(effectiveChatId);
 
     // 加载历史消息
-    loadMessages(effectiveChatId, true).then(() => {
-      // 连接 SSE
-      connectSSE();
-    });
+    loadMessages(effectiveChatId, true);
 
     // 清理函数
     return () => {
-      if (effectiveChatId) {
-        unsubscribe(effectiveChatId);
-      }
-      disconnectSSE();
+      // 轮询会自动清理
     };
-  }, [effectiveChatId, user, connectSSE, disconnectSSE, unsubscribe, loadMessages, markChatAsReadLocally]);
+  }, [effectiveChatId, user, loadMessages, markChatAsReadLocally]);
 
-  // SSE 连接成功后订阅聊天室
+  // 发送消息后立即轮询获取最新消息
   useEffect(() => {
-    if (isConnected && effectiveChatId) {
-      subscribe(effectiveChatId);
-      // 发送已读回执
-      if (user) {
-        api.markAsRead(effectiveChatId, user.id).catch(console.error);
-      }
+    if (effectiveChatId && user) {
+      api.markAsRead(effectiveChatId, user.id).catch(console.error);
     }
-  }, [isConnected, effectiveChatId, subscribe, user]);
+  }, [effectiveChatId, user]);
 
   // 处理URL参数
   useEffect(() => {
@@ -381,27 +359,19 @@ const Chat: React.FC = () => {
 
   // 渲染连接状态
   const renderConnectionStatus = () => {
-    if (sseStatus === 'connecting') {
-      return (
-        <span className="text-[10px] text-gray-400 flex items-center gap-1">
-          <span className="material-symbols-outlined text-[12px] animate-spin">progress_activity</span>
-          连接中...
-        </span>
-      );
-    }
-    if (sseStatus === 'error') {
+    if (pollingError) {
       return (
         <span className="text-[10px] text-red-400 flex items-center gap-1">
           <span className="material-symbols-outlined text-[12px]">error</span>
-          连接失败
+          同步失败
         </span>
       );
     }
-    if (isConnected) {
+    if (isPolling) {
       return (
         <span className="text-[10px] text-green-500 flex items-center gap-1">
-          <span className="material-symbols-outlined text-[12px]">check_circle</span>
-          实时
+          <span className="material-symbols-outlined text-[12px]">sync</span>
+          同步中
         </span>
       );
     }

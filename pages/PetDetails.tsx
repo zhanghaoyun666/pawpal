@@ -165,6 +165,31 @@ const PetDetails: React.FC = () => {
         </p>
       </div>
 
+      {/* AI 预审建议卡片 */}
+      {!pet.isAdopted && user?.role !== 'coordinator' && (
+        <div className="px-4 pb-4">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-white">psychology</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-blue-900 dark:text-blue-300 mb-1">AI 预审助手</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-400 mb-3">
+                  不确定自己是否适合领养 {pet.name}？让 AI 帮你快速评估资质。
+                </p>
+                <button
+                  onClick={() => navigate('/ai-questionnaire')}
+                  className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-medium transition-colors"
+                >
+                  开始 AI 评估
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Sticky Footer */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-t border-[#d5e7cf] dark:border-[#2a4522] z-40 max-w-md mx-auto">
         <div className="flex gap-4 w-full">

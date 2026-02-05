@@ -1,9 +1,8 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import BottomNav from '../components/BottomNav';
-import { useSSE } from '../hooks/useSSE';
 
 // 格式化时间显示
 const formatTime = (timestamp: string): string => {
@@ -46,33 +45,7 @@ const ChatList: React.FC = () => {
   const navigate = useNavigate();
   const { chats, user, refreshChats } = useApp();
 
-  // SSE URL
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  const sseUrl = `${baseUrl}/api/sse/connect`;
 
-  // 处理 SSE 消息
-  const handleWsMessage = useCallback((message: any) => {
-    // 当收到新消息或聊天更新时刷新列表
-    if (message.type === 'new_message' || message.type === 'chat_updated') {
-      refreshChats().catch(console.error);
-    }
-  }, [refreshChats]);
-
-  // 使用 SSE 接收实时通知
-  const { status: sseStatus, connect: connectSSE } = useSSE({
-    url: sseUrl,
-    userId: user?.id,
-    onMessage: handleWsMessage,
-    reconnect: true,
-    reconnectInterval: 5000
-  });
-
-  // 连接 SSE
-  useEffect(() => {
-    if (user) {
-      connectSSE();
-    }
-  }, [user, connectSSE]);
 
   const handleDeleteChat = async (e: React.MouseEvent, chatId: string, participantName: string) => {
     e.stopPropagation();
@@ -91,40 +64,29 @@ const ChatList: React.FC = () => {
     }
   };
 
-  // 初始加载和轮询（作为后备）
+  // 初始加载和轮询
   useEffect(() => {
     if (user) {
       // 立即刷新一次
       refreshChats().catch(console.error);
       
-      // 每30秒刷新一次聊天列表（作为 SSE 的后备）
+      // 每 5 秒刷新一次聊天列表
       const interval = setInterval(() => {
         refreshChats().catch(console.error);
-      }, 30000);
+      }, 5000);
       
       return () => clearInterval(interval);
     }
   }, [user, refreshChats]);
 
-  // 渲染连接状态
+  // 渲染同步状态
   const renderConnectionStatus = () => {
-    if (sseStatus === 'connected') {
-      return (
-        <span className="text-[10px] text-green-500 flex items-center gap-0.5">
-          <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-          实时
-        </span>
-      );
-    }
-    if (sseStatus === 'connecting') {
-      return (
-        <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse"></span>
-          连接中
-        </span>
-      );
-    }
-    return null;
+    return (
+      <span className="text-[10px] text-green-500 flex items-center gap-0.5">
+        <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+        自动同步
+      </span>
+    );
   };
 
   return (
@@ -173,9 +135,7 @@ const ChatList: React.FC = () => {
                   style={{ backgroundImage: `url("${chat.petImage}")` }}
                 ></div>
                 {/* 在线状态指示器 */}
-                {sseStatus === 'connected' && (
-                  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-card-dark"></div>
-                )}
+                <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-card-dark"></div>
               </div>
 
               {/* 内容区域 */}

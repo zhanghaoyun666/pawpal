@@ -37,7 +37,24 @@ const Home: React.FC = () => {
           </h2>
         </div>
 
-        {/* Search Bar */}
+        {/* AI 智能推荐入口 */}
+        <div className="px-5 mb-4">
+          <button
+            onClick={() => navigate('/ai-questionnaire')}
+            className="w-full bg-gradient-to-r from-primary to-secondary rounded-2xl p-4 flex items-center gap-4 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+          >
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-white text-3xl">smart_toy</span>
+            </div>
+            <div className="flex-1 text-left">
+              <h3 className="text-white font-bold text-lg">AI 智能匹配</h3>
+              <p className="text-white/80 text-sm">不知道适合养什么？让 AI 帮你推荐</p>
+            </div>
+            <span className="material-symbols-outlined text-white text-2xl">arrow_forward</span>
+          </button>
+        </div>
+
+        {/* Search Bar -->
         <div className="px-5 mb-6">
           <label className="flex w-full items-center rounded-2xl bg-input-bg dark:bg-input-bg-dark h-14 px-4 shadow-sm focus-within:ring-2 focus-within:ring-primary transition-all">
             <span className="material-symbols-outlined text-text-muted text-2xl mr-3">search</span>
